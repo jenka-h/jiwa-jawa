@@ -1,17 +1,8 @@
-# Jiwa Jawa
+# JavaC: Javanese-Styled Chess
 
-Jiwa Jawa is a Go project scaffold for a two-player networked `catur jawa` game. The project is intended to run each player as a separate process and communicate over UDP with a custom reliability layer.
+Jiwa Jawa is a Go project scaffold for a two-player networked `javanese-styled chess` game. The project is intended to run each player as a separate process and communicate over UDP with a custom reliability layer.
 
 At the moment, this repository contains the planned directory structure for the application. Source packages can be added under `src/`, executables under `cmd/`, and supporting materials under `docs/`, `assets/`, and `scripts/`.
-
-## Goals
-
-- Build a multiplayer `catur jawa` game in Go.
-- Run Player A and Player B as separate programs/processes.
-- Use UDP sockets for player-to-player communication.
-- Implement reliable delivery above UDP using acknowledgements, retries, sequence numbers, and duplicate detection.
-- Keep game rules, networking, session handling, logging, and UI concerns separated.
-- Provide room for optional features such as GUI, rating, and a separate logging service.
 
 ## Current Directory Structure
 
@@ -31,26 +22,6 @@ jiwa-jawa/
 │   ├── types/       # Shared domain types such as board, piece, move, and player
 │   └── ui/          # CLI/TUI/GUI presentation layer
 └── README.md
-```
-
-## Suggested Go Layout
-
-When implementation begins, a typical Go layout for this repository could look like this:
-
-```text
-cmd/
-└── player/
-    └── main.go
-
-src/
-├── app/
-├── logging/
-├── protocol/
-├── rating/
-├── session/
-├── transport/
-├── types/
-└── ui/
 ```
 
 The `cmd/player` package should contain only the program entry point and command-line parsing. Most reusable code should live under `src/` packages.
@@ -121,17 +92,6 @@ go test ./...
 ```sh
 go fmt ./...
 ```
-
-## UDP Reliability Plan
-
-Because UDP does not guarantee delivery, ordering, or duplicate prevention, the transport layer should add a small reliability protocol. A practical first version can include:
-
-1. Sequence number for every outgoing message.
-2. ACK message for every received message.
-3. Retry timer for unacknowledged messages.
-4. Duplicate detection for repeated sequence numbers.
-5. Message type field for moves, ACKs, joins, resignations, and game state updates.
-
 ## Packet-Loss Testing
 
 On Linux, packet loss can be simulated with `tc netem`. For example:
@@ -145,13 +105,3 @@ Remove the rule after testing:
 ```sh
 sudo tc qdisc del dev lo root
 ```
-
-Use the correct network interface for your setup. For local loopback testing, `lo` is usually appropriate.
-
-## Development Notes
-
-- Keep game rules independent from UDP/networking code.
-- Keep serialization logic inside `src/protocol`.
-- Keep UDP socket handling and retry logic inside `src/transport`.
-- Keep command-line parsing and process startup inside `cmd/`.
-- Add tests as packages are implemented, especially for protocol encoding and move validation.
