@@ -1,107 +1,62 @@
-# JavaC: Javanese-Styled Chess
+# JavaC: A Javanese-Style Chess
 
-Jiwa Jawa is a Go project scaffold for a two-player networked `javanese-styled chess` game. The project is intended to run each player as a separate process and communicate over UDP with a custom reliability layer.
+A Go foundation for a multiplayer `catur jawa` game over UDP.
 
-At the moment, this repository contains the planned directory structure for the application. Source packages can be added under `src/`, executables under `cmd/`, and supporting materials under `docs/`, `assets/`, and `scripts/`.
+This project is planned as a two-player networked board game where each player runs a separate program. Communication uses UDP, with a custom reliability layer built above UDP to handle packet loss.
 
-## Current Directory Structure
+## Feature checklist
+
+### Main features
+
+| Feature | Requirement | Planned implementation area | Status |
+| --- | --- | --- | --- |
+| Separate player programs | Player A and Player B run as two different programs/processes. | `cmd/player`, `internal/app`, `internal/network` | Planned |
+| UDP communication | All player-to-player communication uses UDP sockets. | `internal/network` | Planned |
+| Custom reliability protocol | Build a custom protocol above UDP to ensure messages are delivered despite packet loss. | `internal/network`, `internal/protocol` | Planned |
+| Valid catur jawa gameplay | Moves must follow the real rules of catur jawa. | `internal/domain`, `internal/rules` | Planned |
+| Packet-loss testing | Test with Linux `netem`, for example `tc qdisc add dev eth0 root netem loss 50%`, then remove the rule after testing. | manual test plan/docs | Planned |
+| Game logging | Store moves and/or opponent moves so the current game condition can be understood later. | `internal/logging` | Planned |
+
+### Bonus features
+
+| Bonus | Requirement | Planned implementation area | Status |
+| --- | --- | --- | --- |
+| GUI | Create a graphical interface for the game. | future `internal/gui` or separate frontend | Not started |
+| Separate logging service with Raft | Logging is handled by a separate program, not the game program, and uses Raft to ensure correctness. | future `cmd/logger-service`, `internal/raftlog` | Not started |
+| Rating system | Create a rating system for all players. The calculation can be free-form but should use linear algebra. | future `internal/rating` | Not started |
+| Demo video | Record a demo of the program, ideally with one partner. | documentation/demo asset | Not started |
+
+## Project Structure
 
 ```text
-jiwa-jawa/
-├── assets/          # Images, icons, demo media, or other static assets
-├── cmd/             # Go executable entry points, for example cmd/player
-├── docs/            # Architecture notes, protocol notes, and test plans
-├── scripts/         # Helper scripts for running, testing, or network simulation
-├── src/
-│   ├── app/         # Application orchestration and game flow
-│   ├── logging/     # Game/event logging
-│   ├── protocol/    # Message format, encoding, and decoding
-│   ├── rating/      # Optional player rating calculation
-│   ├── session/     # Player sessions, turns, and game lifecycle state
-│   ├── transport/   # UDP transport and reliability layer
-│   ├── types/       # Shared domain types such as board, piece, move, and player
-│   └── ui/          # CLI/TUI/GUI presentation layer
+jiwa-jawa
+├── cmd
+│   ├── player          # main executable for Player A / Player B
+│   └── logger-service  # optional bonus logging service
+├── internal
+│   ├── app             # application orchestration
+│   ├── domain          # board, pieces, moves, game state
+│   ├── rules           # catur jawa rule validation
+│   ├── protocol        # network message format and encoding/decoding
+│   ├── network         # UDP socket and custom reliable transport
+│   ├── logging         # local game event logging
+│   ├── rating          # optional rating system
+│   └── gui             # optional GUI layer
+├── docs                # architecture notes and test plans
+├── go.mod
 └── README.md
 ```
 
-The `cmd/player` package should contain only the program entry point and command-line parsing. Most reusable code should live under `src/` packages.
+## Package responsibilities
 
-## Package Responsibilities
-
-| Directory | Responsibility |
+| Package | Responsibility |
 | --- | --- |
-| `cmd/` | Main Go executables. A likely first executable is `cmd/player`, used to start one player process. |
-| `src/app/` | Coordinates the game loop, UI, session state, transport, protocol, and logging. |
-| `src/types/` | Core game data structures such as board, position, move, piece, player, and game state. |
-| `src/session/` | Manages local player identity, turns, game lifecycle, and opponent state. |
-| `src/protocol/` | Defines network messages and handles serialization/deserialization. |
-| `src/transport/` | Wraps UDP sockets and implements custom reliable delivery. |
-| `src/logging/` | Stores moves, received messages, network events, and game history. |
-| `src/ui/` | User interaction layer, such as CLI, TUI, or future GUI. |
-| `src/rating/` | Optional rating system for players. |
-| `docs/` | Design documents, protocol explanation, and packet-loss testing notes. |
-| `scripts/` | Helper scripts for development and testing. |
-| `assets/` | Static files used by documentation, UI, or demos. |
-
-## Planned Features
-
-### Main Features
-
-| Feature | Description | Planned Area | Status |
-| --- | --- | --- | --- |
-| Separate player programs | Each player runs their own process. | `cmd/player`, `src/app`, `src/session` | Planned |
-| UDP communication | Players communicate using UDP sockets. | `src/transport` | Planned |
-| Reliable protocol over UDP | Messages are resent and acknowledged to tolerate packet loss. | `src/transport`, `src/protocol` | Planned |
-| Catur jawa rules | Moves are validated according to the game rules. | `src/types`, `src/session`, `src/app` | Planned |
-| Packet-loss testing | Test reliability using Linux `netem` or similar tools. | `docs/`, `scripts/` | Planned |
-| Game logging | Store moves and important game/network events. | `src/logging` | Planned |
-
-### Optional / Bonus Features
-
-| Feature | Description | Planned Area | Status |
-| --- | --- | --- | --- |
-| GUI | Add a graphical interface after the core game works. | `src/ui`, `assets` | Not started |
-| Separate logging service | Run logging as a separate service, potentially with Raft. | future `cmd/logger-service` | Not started |
-| Rating system | Calculate player ratings using a linear algebra based approach. | `src/rating` | Not started |
-| Demo video | Record a gameplay/networking demo. | `assets`, `docs` | Not started |
-
-## Getting Started
-
-This repository does not currently include Go source files or a `go.mod` file. To initialize the Go module, run this from the `jiwa-jawa` directory:
-
-```sh
-go mod init jiwa-jawa
-```
-
-Then add a player executable, for example:
-
-```text
-cmd/player/main.go
-```
-
-After Go files are added, common commands will be:
-
-```sh
-go run ./cmd/player
-```
-
-```sh
-go test ./...
-```
-
-```sh
-go fmt ./...
-```
-## Packet-Loss Testing
-
-On Linux, packet loss can be simulated with `tc netem`. For example:
-
-```sh
-sudo tc qdisc add dev lo root netem loss 50%
-```
-
-Remove the rule after testing:
-
-```sh
-sudo tc qdisc del dev lo root
-```
+| `cmd/player` | Entry point for running a player process. Parses CLI arguments such as local port, peer address, and player name. |
+| `internal/app` | Coordinates the game controller, rules engine, network transport, protocol, and logger. |
+| `internal/domain` | Contains pure game data: board, position, piece, move, player, and game state. No UDP or GUI code. |
+| `internal/rules` | Validates and applies legal catur jawa moves. |
+| `internal/protocol` | Converts game messages into bytes and converts received bytes back into structured messages. |
+| `internal/network` | Wraps Go UDP sockets and implements reliable delivery with sequence numbers, ACKs, retries, and duplicate detection. |
+| `internal/logging` | Persists moves and important game/network events. |
+| `internal/gui` | Optional GUI layer. Should call the app/controller layer instead of containing game logic. |
+| `internal/rating` | Optional player rating calculation. |``
