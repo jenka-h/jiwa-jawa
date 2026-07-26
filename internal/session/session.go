@@ -1,7 +1,65 @@
+package session
+
+import (
+	"context"
+	"time"
+)
+
+// State describes the lifecycle of a Dam Daman network session.
+type State uint8
+
+const (
+	StateIdle State = iota
+	StateJoining
+	StateConnected
+	StateRecovering
+	StateClosing
+	StateClosed
+)
+
+// Player describes one participant in a Dam Daman session.
+type Player struct {
+	ID      string
+	Name    string
+	Address string
+}
+
+// Session stores local and peer metadata for one game session.
 type Session struct {
-    LocalName  string
-    PeerName   string
-    LocalAddr  string
-    PeerAddr   string
-    Connected  bool
+	ID        uint64
+	Local     Player
+	Peer      Player
+	State     State
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+// New creates a new session descriptor.
+func New(id uint64, local Player) *Session {
+	return nil
+}
+
+// Join starts session negotiation with a peer.
+func (s *Session) Join(ctx context.Context, peer Player) error {
+	return ErrNotImplemented
+}
+
+// Accept accepts a peer join request.
+func (s *Session) Accept(peer Player) error {
+	return ErrNotImplemented
+}
+
+// MarkConnected marks the session as connected.
+func (s *Session) MarkConnected() error {
+	return ErrNotImplemented
+}
+
+// MarkRecovering marks the session as recovering after heartbeat/state mismatch.
+func (s *Session) MarkRecovering() error {
+	return ErrNotImplemented
+}
+
+// Close closes the session.
+func (s *Session) Close() error {
+	return ErrNotImplemented
 }
