@@ -1,6 +1,10 @@
 package raftlog
 
-import "context"
+import (
+	"context"
+
+	err "jiwa-jawa/internal/error"
+)
 
 // NodeState is the Raft node role.
 type NodeState uint8
@@ -27,17 +31,17 @@ type Config struct {
 
 // NewNode creates a Raft logger node.
 func NewNode(config Config) (*Node, error) {
-	return nil, ErrNotImplemented
+	return nil, err.ErrNotImplemented
 }
 
 // Start starts Raft timers and RPC handling.
 func (n *Node) Start(ctx context.Context) error {
-	return ErrNotImplemented
+	return err.ErrNotImplemented
 }
 
 // Stop stops the Raft node.
 func (n *Node) Stop(ctx context.Context) error {
-	return ErrNotImplemented
+	return err.ErrNotImplemented
 }
 
 // IsLeader reports whether this node is currently leader.

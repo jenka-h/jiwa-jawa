@@ -3,7 +3,8 @@ package gui
 import (
 	"context"
 
-	"jiwa-jaw/internal/engine"
+	"jiwa-jawa/internal/engine"
+	err "jiwa-jawa/internal/error"
 )
 
 // UI describes a Dam Daman user interface.
@@ -25,17 +26,17 @@ func NewCLI() *CLI {
 
 // Start starts the CLI input/render loop.
 func (c *CLI) Start(ctx context.Context) error {
-	return ErrNotImplemented
+	return err.ErrNotImplemented
 }
 
 // Stop stops the CLI.
 func (c *CLI) Stop(ctx context.Context) error {
-	return ErrNotImplemented
+	return err.ErrNotImplemented
 }
 
 // Render draws the current game state.
 func (c *CLI) Render(state *engine.GameState) error {
-	return ErrNotImplemented
+	return err.ErrNotImplemented
 }
 
 // Moves returns parsed moves from user input.

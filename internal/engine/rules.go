@@ -2,7 +2,6 @@ package engine
 
 import "fmt"
 
-// ValidateMove checks whether a player can make a move on the current board.
 func ValidateMove(board *Board, player Player, move Move) error {
 	if board == nil {
 		return fmt.Errorf("board is nil")
@@ -20,8 +19,8 @@ func ValidateMove(board *Board, player Player, move Move) error {
 		return fmt.Errorf("source point %d is not connected to target point %d", move.Source, move.Target)
 	}
 
-	piece, occupied := board.PieceAt(move.Source)
-	if !occupied {
+	piece, ok := board.PieceAt(move.Source)
+	if !ok {
 		return fmt.Errorf("source point %d is empty", move.Source)
 	}
 	if piece.Owner != player {
@@ -34,11 +33,9 @@ func ValidateMove(board *Board, player Player, move Move) error {
 	return nil
 }
 
-// ApplyMove validates and applies a move to the board.
 func ApplyMove(board *Board, player Player, move Move) error {
 	if err := ValidateMove(board, player, move); err != nil {
 		return err
 	}
-
 	return board.MovePiece(move)
 }

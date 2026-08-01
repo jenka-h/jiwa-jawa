@@ -2,10 +2,8 @@ package engine
 
 import "fmt"
 
-// PointID identifies a playable point/node on the board graph.
 type PointID int
 
-// Player identifies a player in the game.
 type Player string
 
 const (
@@ -14,19 +12,16 @@ const (
 	PlayerTwo  Player = "player_two"
 )
 
-// Position stores display coordinates for a point on the board.
 type Position struct {
 	ID PointID
 	X  int
 	Y  int
 }
 
-// Piece represents one piece owned by a player.
 type Piece struct {
 	Owner Player
 }
 
-// Move represents a move from one board point to another.
 type Move struct {
 	Source PointID
 	Target PointID
@@ -36,7 +31,12 @@ func (m Move) String() string {
 	return fmt.Sprintf("%d -> %d", m.Source, m.Target)
 }
 
-// Phase describes the current game phase.
+type Board struct {
+	Points    map[PointID]Position
+	Neighbors map[PointID][]PointID
+	Pieces    map[PointID]Piece
+}
+
 type Phase uint8
 
 const (
@@ -47,8 +47,27 @@ const (
 	PhaseFinish
 )
 
-// Event describes an engine-level event that can be logged or sent to the app layer.
 type Event struct {
 	Phase Phase
 	Move  Move
+}
+
+type GameState struct {
+	Board       *Board
+	CurrentTurn Player
+	Phase       Phase
+	MoveNumber  int
+	Finished    bool
+	Winner      Player
+}
+
+type coordinate struct{ x, y int }
+
+type edgeSpec struct{ from, to coordinate }
+
+type tipSpec struct{ tipY, midY, baseY int }
+
+type placementSpec struct {
+	coordinate
+	owner Player
 }

@@ -1,5 +1,7 @@
 package rating
 
+import err "jiwa-jawa/internal/error"
+
 // Elo implements a basic Elo-style rating system.
 type Elo struct {
 	KFactor float64
@@ -17,5 +19,5 @@ func (e *Elo) ExpectedScore(a PlayerRating, b PlayerRating) float64 {
 
 // Update updates ratings after one game.
 func (e *Elo) Update(a PlayerRating, b PlayerRating, result Result) (PlayerRating, PlayerRating, error) {
-	return PlayerRating{}, PlayerRating{}, ErrNotImplemented
+	return PlayerRating{}, PlayerRating{}, err.ErrNotImplemented
 }

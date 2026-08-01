@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"jiwa-jaw/internal/error"
+	"jiwa-jawa/internal/error"
 )
 
 const HeaderSize = 16

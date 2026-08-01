@@ -3,9 +3,18 @@ package rudp
 import (
 	"context"
 	"net"
+	"sync"
+	"time"
 
-	"jiwa-jaw/internal/transport/protocol"
+	err "jiwa-jawa/internal/error"
+	"jiwa-jawa/internal/transport/protocol"
 )
+
+// ReceivedPacket is a packet accepted from the network with sender metadata.
+type ReceivedPacket struct {
+	Packet protocol.Packet
+	Addr   *net.UDPAddr
+}
 
 // Connection represents one UDP-based reliable transport endpoint.
 type Connection struct {
@@ -13,87 +22,315 @@ type Connection struct {
 	peer *net.UDPAddr
 
 	sessionID uint64
+	nextSeq   uint32
 
-	seq      *SequenceGenerator
-	receiver *Receiver
-	pending  *PendingStore
-	window   *FlowWindow
-	tracker  *SequenceTracker
+	pending map[uint32]chan struct{}
+	seen    map[uint32]struct{}
 
-	done chan struct{}
+	incoming chan ReceivedPacket
+	errors   chan error
+	done     chan struct{}
+
+	timeout    time.Duration
+	maxRetries int
+	bufferSize int
+
+	mu        sync.Mutex
+	closeOnce sync.Once
 }
 
 // NewConnection creates a new RUDP connection bound to cfg.ListenAddr.
 func NewConnection(cfg Config) (*Connection, error) {
-	return nil, ErrNotImplemented
+	listenAddr, err := net.ResolveUDPAddr("udp", cfg.ListenAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	udpConn, err := net.ListenUDP("udp", listenAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	bufferSize := cfg.BufferSize
+	if bufferSize <= 0 {
+		bufferSize = DefaultBufferSize
+	}
+
+	timeout := cfg.Timeout
+	if timeout <= 0 {
+		timeout = DefaultTimeout
+	}
+
+	maxRetries := cfg.MaxRetries
+	if maxRetries <= 0 {
+		maxRetries = DefaultMaxRetries
+	}
+
+	conn := &Connection{
+		conn:       udpConn,
+		sessionID:  cfg.SessionID,
+		nextSeq:    1,
+		pending:    make(map[uint32]chan struct{}),
+		seen:       make(map[uint32]struct{}),
+		incoming:   make(chan ReceivedPacket, bufferSize),
+		errors:     make(chan error, bufferSize),
+		done:       make(chan struct{}),
+		timeout:    timeout,
+		maxRetries: maxRetries,
+		bufferSize: bufferSize,
+	}
+
+	if cfg.PeerAddr != "" {
+		if err := conn.SetPeer(cfg.PeerAddr); err != nil {
+			_ = udpConn.Close()
+			return nil, err
+		}
+	}
+
+	return conn, nil
 }
 
-// Start starts background workers, such as receive loop and retransmission loop.
+// Start starts the receive loop.
 func (c *Connection) Start(ctx context.Context) error {
-	return ErrNotImplemented
+	go c.receiveLoop(ctx)
+	return nil
 }
 
-// Shutdown stops background workers and closes the underlying socket.
-func (c *Connection) Shutdown(ctx context.Context) error {
-	return ErrNotImplemented
-}
-
-// Close closes the underlying connection immediately.
+// Close stops the connection, unblocks pending ACK waits, and closes the UDP socket.
 func (c *Connection) Close() error {
-	return ErrNotImplemented
+	var closeErr error
+
+	c.closeOnce.Do(func() {
+		close(c.done)
+
+		c.mu.Lock()
+		for sequence := range c.pending {
+			delete(c.pending, sequence)
+		}
+		c.mu.Unlock()
+
+		closeErr = c.conn.Close()
+	})
+
+	return closeErr
 }
 
 // Done returns a channel that is closed when the connection shuts down.
 func (c *Connection) Done() <-chan struct{} {
-	return nil
+	return c.done
 }
 
 // LocalAddr returns the local UDP address.
 func (c *Connection) LocalAddr() net.Addr {
-	return nil
+	return c.conn.LocalAddr()
 }
 
 // PeerAddr returns the configured peer UDP address.
 func (c *Connection) PeerAddr() *net.UDPAddr {
-	return nil
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.peer
 }
 
 // SetPeer sets the remote peer address.
 func (c *Connection) SetPeer(addr string) error {
-	return ErrNotImplemented
-}
+	peer, err := net.ResolveUDPAddr("udp", addr)
+	if err != nil {
+		return err
+	}
 
-// SendPacket sends one packet without reliability handling.
-func (c *Connection) SendPacket(packet protocol.Packet) error {
-	return ErrNotImplemented
-}
+	c.mu.Lock()
+	c.peer = peer
+	c.mu.Unlock()
 
-// SendPacketTo sends one packet to a specific address.
-func (c *Connection) SendPacketTo(packet protocol.Packet, addr *net.UDPAddr) error {
-	return ErrNotImplemented
-}
-
-// ReceivePacket receives and decodes one packet synchronously.
-func (c *Connection) ReceivePacket() (protocol.Packet, *net.UDPAddr, error) {
-	return protocol.Packet{}, nil, ErrNotImplemented
-}
-
-// ReceivePacketContext receives and decodes one packet with cancellation support.
-func (c *Connection) ReceivePacketContext(ctx context.Context) (protocol.Packet, *net.UDPAddr, error) {
-	return protocol.Packet{}, nil, ErrNotImplemented
-}
-
-// Incoming returns the receive channel for packets accepted by the RUDP layer.
-func (c *Connection) Incoming() <-chan ReceivedPacket {
 	return nil
+}
+
+// SendPacket sends one packet to the configured peer without retry handling.
+func (c *Connection) SendPacket(packet protocol.Packet) error {
+	c.mu.Lock()
+	peer := c.peer
+	c.mu.Unlock()
+
+	if peer == nil {
+		return err.ErrPeerNotSet
+	}
+
+	return c.sendPacketTo(packet, peer)
+}
+
+// SendReliable sends one reliable packet and waits for its ACK with retries.
+func (c *Connection) SendReliable(packet protocol.Packet) error {
+	c.mu.Lock()
+	peer := c.peer
+	if peer == nil {
+		c.mu.Unlock()
+		return err.ErrPeerNotSet
+	}
+
+	sequence := c.nextSequenceLocked()
+	packet.Header.Sequence = sequence
+	packet.Header.SessionID = c.sessionID
+	packet.Header.Flags |= protocol.FlagReliable
+
+	acked := make(chan struct{})
+	c.pending[sequence] = acked
+	c.mu.Unlock()
+
+	defer c.removePending(sequence)
+
+	for attempt := 0; attempt <= c.maxRetries; attempt++ {
+		if err := c.sendPacketTo(packet, peer); err != nil {
+			return err
+		}
+
+		select {
+		case <-acked:
+			return nil
+		case <-time.After(c.timeout):
+		case <-c.done:
+			return err.ErrClosed
+		}
+	}
+
+	return err.ErrMaxRetries
+}
+
+// ReceivePacketContext receives and decodes one non-ACK packet with cancellation support.
+func (c *Connection) ReceivePacketContext(ctx context.Context) (protocol.Packet, *net.UDPAddr, error) {
+	buffer := make([]byte, c.bufferSize)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return protocol.Packet{}, nil, ctx.Err()
+		case <-c.done:
+			return protocol.Packet{}, nil, err.ErrClosed
+		default:
+		}
+
+		_ = c.conn.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
+		n, addr, readErr := c.conn.ReadFromUDP(buffer)
+		if readErr != nil {
+			if netErr, ok := readErr.(net.Error); ok && netErr.Timeout() {
+				continue
+			}
+			return protocol.Packet{}, nil, readErr
+		}
+
+		packet, decodeErr := protocol.DecodePacket(buffer[:n])
+		if decodeErr != nil {
+			return protocol.Packet{}, nil, decodeErr
+		}
+
+		if packet.IsACK() {
+			c.handleACK(packet)
+			continue
+		}
+
+		if packet.IsReliable() {
+			_ = c.sendACKTo(packet.Header.Sequence, addr)
+			if c.markDuplicate(packet.Header.Sequence) {
+				continue
+			}
+		}
+
+		return packet, addr, nil
+	}
+}
+
+// Incoming returns packets accepted by the background receive loop.
+func (c *Connection) Incoming() <-chan ReceivedPacket {
+	return c.incoming
 }
 
 // Errors returns asynchronous connection errors.
 func (c *Connection) Errors() <-chan error {
-	return nil
+	return c.errors
 }
 
-// SendReliable sends one packet and waits for its ACK.
-func (c *Connection) SendReliable(packet protocol.Packet) error {
-	return ErrNotImplemented
+func (c *Connection) receiveLoop(ctx context.Context) {
+	for {
+		packet, addr, err := c.ReceivePacketContext(ctx)
+		if err != nil {
+			select {
+			case <-ctx.Done():
+				return
+			case <-c.done:
+				return
+			default:
+				c.report(err)
+				continue
+			}
+		}
+
+		select {
+		case c.incoming <- ReceivedPacket{Packet: packet, Addr: addr}:
+		case <-ctx.Done():
+			return
+		case <-c.done:
+			return
+		}
+	}
+}
+
+func (c *Connection) sendPacketTo(packet protocol.Packet, addr *net.UDPAddr) error {
+	data, err := protocol.EncodePacket(packet)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.conn.WriteToUDP(data, addr)
+	return err
+}
+
+func (c *Connection) sendACKTo(sequence uint32, addr *net.UDPAddr) error {
+	return c.sendPacketTo(protocol.NewACK(c.sessionID, sequence), addr)
+}
+
+func (c *Connection) handleACK(packet protocol.Packet) {
+	c.mu.Lock()
+	acked, ok := c.pending[packet.Header.Sequence]
+	if ok {
+		delete(c.pending, packet.Header.Sequence)
+	}
+	c.mu.Unlock()
+
+	if ok {
+		close(acked)
+	}
+}
+
+func (c *Connection) markDuplicate(sequence uint32) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if _, ok := c.seen[sequence]; ok {
+		return true
+	}
+
+	c.seen[sequence] = struct{}{}
+	return false
+}
+
+func (c *Connection) removePending(sequence uint32) {
+	c.mu.Lock()
+	delete(c.pending, sequence)
+	c.mu.Unlock()
+}
+
+func (c *Connection) nextSequenceLocked() uint32 {
+	sequence := c.nextSeq
+	c.nextSeq++
+	if c.nextSeq == 0 {
+		c.nextSeq = 1
+	}
+	return sequence
+}
+
+func (c *Connection) report(reportErr error) {
+	select {
+	case c.errors <- reportErr:
+	default:
+	}
 }

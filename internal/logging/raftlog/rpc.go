@@ -1,5 +1,7 @@
 package raftlog
 
+import err "jiwa-jawa/internal/error"
+
 // RequestVoteRequest is the Raft election request.
 type RequestVoteRequest struct {
 	Term         uint64
@@ -32,10 +34,10 @@ type AppendEntriesResponse struct {
 
 // HandleRequestVote handles an incoming RequestVote RPC.
 func (n *Node) HandleRequestVote(request RequestVoteRequest) (RequestVoteResponse, error) {
-	return RequestVoteResponse{}, ErrNotImplemented
+	return RequestVoteResponse{}, err.ErrNotImplemented
 }
 
 // HandleAppendEntries handles an incoming AppendEntries RPC.
 func (n *Node) HandleAppendEntries(request AppendEntriesRequest) (AppendEntriesResponse, error) {
-	return AppendEntriesResponse{}, ErrNotImplemented
+	return AppendEntriesResponse{}, err.ErrNotImplemented
 }

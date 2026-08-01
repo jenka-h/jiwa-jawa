@@ -3,6 +3,8 @@ package client
 import (
 	"context"
 	"time"
+
+	err "jiwa-jawa/internal/error"
 )
 
 // EventType identifies log event categories for Dam Daman.
@@ -38,15 +40,15 @@ type FileLogger struct{}
 
 // NewFileLogger creates a local JSONL logger.
 func NewFileLogger(path string) (*FileLogger, error) {
-	return nil, ErrNotImplemented
+	return nil, err.ErrNotImplemented
 }
 
 // Log writes one event.
 func (l *FileLogger) Log(ctx context.Context, event Event) error {
-	return ErrNotImplemented
+	return err.ErrNotImplemented
 }
 
 // Close closes the logger.
 func (l *FileLogger) Close() error {
-	return ErrNotImplemented
+	return err.ErrNotImplemented
 }

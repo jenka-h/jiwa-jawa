@@ -3,7 +3,7 @@ package app
 import (
 	"time"
 
-	"jiwa-jaw/internal/engine"
+	"jiwa-jawa/internal/engine"
 )
 
 // EventType identifies application events that can be rendered or logged.

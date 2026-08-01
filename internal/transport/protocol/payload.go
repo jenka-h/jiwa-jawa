@@ -20,6 +20,12 @@ type MovePayload struct {
 	Target   int    `json:"target"`
 }
 
+// ErrorPayload carries an error code and user-facing message.
+type ErrorPayload struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
 // FinishPayload carries game finish information.
 type FinishPayload struct {
 	WinnerID string `json:"winner_id,omitempty"`

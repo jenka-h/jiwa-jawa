@@ -3,6 +3,8 @@ package session
 import (
 	"context"
 	"time"
+
+	err "jiwa-jawa/internal/error"
 )
 
 // State describes the lifecycle of a Dam Daman network session.
@@ -41,25 +43,25 @@ func New(id uint64, local Player) *Session {
 
 // Join starts session negotiation with a peer.
 func (s *Session) Join(ctx context.Context, peer Player) error {
-	return ErrNotImplemented
+	return err.ErrNotImplemented
 }
 
 // Accept accepts a peer join request.
 func (s *Session) Accept(peer Player) error {
-	return ErrNotImplemented
+	return err.ErrNotImplemented
 }
 
 // MarkConnected marks the session as connected.
 func (s *Session) MarkConnected() error {
-	return ErrNotImplemented
+	return err.ErrNotImplemented
 }
 
 // MarkRecovering marks the session as recovering after heartbeat/state mismatch.
 func (s *Session) MarkRecovering() error {
-	return ErrNotImplemented
+	return err.ErrNotImplemented
 }
 
 // Close closes the session.
 func (s *Session) Close() error {
-	return ErrNotImplemented
+	return err.ErrNotImplemented
 }

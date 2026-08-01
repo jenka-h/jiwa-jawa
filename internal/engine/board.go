@@ -2,52 +2,38 @@ package engine
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 )
 
-// Board models the catur jawa board as a graph.
-// Points are playable locations, Neighbors defines legal one-step movement,
-// and Pieces stores only occupied points.
-type Board struct {
-	Points    map[PointID]Position
-	Neighbors map[PointID][]PointID
-	Pieces    map[PointID]Piece
-}
-
 func NewBoard() *Board {
 	return &Board{
-		Points:    make(map[PointID]Position),
-		Neighbors: make(map[PointID][]PointID),
-		Pieces:    make(map[PointID]Piece),
+		Points:    map[PointID]Position{},
+		Neighbors: map[PointID][]PointID{},
+		Pieces:    map[PointID]Piece{},
 	}
 }
 
 func (b *Board) String() string {
-	if b == nil {
-		return "<nil board>"
-	}
-
 	ids := make([]int, 0, len(b.Points))
 	for id := range b.Points {
 		ids = append(ids, int(id))
 	}
 	sort.Ints(ids)
 
-	var builder strings.Builder
+	var out strings.Builder
 	for _, rawID := range ids {
 		id := PointID(rawID)
 		position := b.Points[id]
 		piece, occupied := b.PieceAt(id)
-
 		if occupied {
-			fmt.Fprintf(&builder, "%d(%d,%d): %s\n", id, position.X, position.Y, piece.Owner)
-		} else {
-			fmt.Fprintf(&builder, "%d(%d,%d): empty\n", id, position.X, position.Y)
+			fmt.Fprintf(&out, "%d:(%d,%d)=%s\n", id, position.X, position.Y, piece.Owner)
+			continue
 		}
+		fmt.Fprintf(&out, "%d:(%d,%d)=empty\n", id, position.X, position.Y)
 	}
-
-	return strings.TrimRight(builder.String(), "\n")
+	return strings.TrimSpace(out.String())
 }
 
 func (b *Board) AddPoint(id PointID, x, y int) {
@@ -68,13 +54,13 @@ func (b *Board) Connect(a, c PointID) error {
 }
 
 func (b *Board) HasPoint(id PointID) bool {
-	_, exists := b.Points[id]
-	return exists
+	_, ok := b.Points[id]
+	return ok
 }
 
 func (b *Board) PieceAt(id PointID) (Piece, bool) {
-	piece, occupied := b.Pieces[id]
-	return piece, occupied
+	piece, ok := b.Pieces[id]
+	return piece, ok
 }
 
 func (b *Board) IsEmpty(id PointID) bool {
@@ -89,14 +75,13 @@ func (b *Board) PlacePiece(id PointID, piece Piece) error {
 	if !b.IsEmpty(id) {
 		return fmt.Errorf("point %d is already occupied", id)
 	}
-
 	b.Pieces[id] = piece
 	return nil
 }
 
 func (b *Board) MovePiece(move Move) error {
-	piece, occupied := b.PieceAt(move.Source)
-	if !occupied {
+	piece, ok := b.PieceAt(move.Source)
+	if !ok {
 		return fmt.Errorf("source point %d is empty", move.Source)
 	}
 	if !b.IsEmpty(move.Target) {
@@ -109,21 +94,12 @@ func (b *Board) MovePiece(move Move) error {
 }
 
 func (b *Board) AreConnected(from, to PointID) bool {
-	for _, neighbor := range b.Neighbors[from] {
-		if neighbor == to {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(b.Neighbors[from], to)
 }
 
 func appendUniquePoint(points []PointID, point PointID) []PointID {
-	for _, existing := range points {
-		if existing == point {
-			return points
-		}
+	if slices.Contains(points, point) {
+		return points
 	}
-
 	return append(points, point)
 }
