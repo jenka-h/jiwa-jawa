@@ -1,23 +1,45 @@
 package rating
 
-import "math"
+import (
+	"math"
 
-// Elo implements a basic Elo-style rating system.
+	"jiwa-jawa/internal/player"
+)
+
+type PlayerRating struct {
+	PlayerID player.ID
+	Rating   float64
+	Games    int
+	Wins     int
+	Losses   int
+	Draws    int
+}
+
+type Result float64
+
+const (
+	Loss Result = 0.0
+	Draw Result = 0.5
+	Win  Result = 1.0
+)
+
+type System interface {
+	ExpectedScore(a PlayerRating, b PlayerRating) float64
+	Update(a PlayerRating, b PlayerRating, result Result) (PlayerRating, PlayerRating, error)
+}
+
 type Elo struct {
 	KFactor float64
 }
 
-// NewElo creates an Elo rating system.
 func NewElo(kFactor float64) *Elo {
 	return &Elo{KFactor: kFactor}
 }
 
-// ExpectedScore returns player a's expected score against player b.
 func (e *Elo) ExpectedScore(a PlayerRating, b PlayerRating) float64 {
 	return 1 / (1 + math.Pow(10, (b.Rating-a.Rating)/400))
 }
 
-// Update updates ratings after one game.
 func (e *Elo) Update(a PlayerRating, b PlayerRating, result Result) (PlayerRating, PlayerRating, error) {
 	expectedA := e.ExpectedScore(a, b)
 	expectedB := e.ExpectedScore(b, a)

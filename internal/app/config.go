@@ -1,9 +1,9 @@
 package app
 
-// Config contains runtime options for one Dam Daman client.
+import "jiwa-jawa/internal/player"
+
 type Config struct {
-	PlayerID   string
-	PlayerName string
+	Player     player.Player
 	ListenAddr string
 	PeerAddr   string
 	SessionID  uint64

@@ -4,12 +4,12 @@ import "fmt"
 
 type PointID int
 
-type Player string
+type Side string
 
 const (
-	PlayerNone Player = ""
-	PlayerOne  Player = "player_one"
-	PlayerTwo  Player = "player_two"
+	SideNone Side = ""
+	SideOne  Side = "player_one"
+	SideTwo  Side = "player_two"
 )
 
 type Position struct {
@@ -19,7 +19,7 @@ type Position struct {
 }
 
 type Piece struct {
-	Owner Player
+	Owner Side
 }
 
 type Move struct {
@@ -54,20 +54,20 @@ type Event struct {
 
 type GameState struct {
 	Board       *Board
-	CurrentTurn Player
+	CurrentTurn Side
 	Phase       Phase
 	MoveNumber  int
 	Finished    bool
-	Winner      Player
+	Winner      Side
 }
 
-type coordinate struct{ x, y int }
+type Coordinate struct{ X, Y int }
 
-type edgeSpec struct{ from, to coordinate }
+type EdgeSpec struct{ From, To Coordinate }
 
-type tipSpec struct{ tipY, midY, baseY int }
+type TipSpec struct{ TipY, MidY, BaseY int }
 
-type placementSpec struct {
-	coordinate
-	owner Player
+type PlacementSpec struct {
+	Coordinate
+	Owner Side
 }

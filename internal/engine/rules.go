@@ -2,12 +2,12 @@ package engine
 
 import "fmt"
 
-func ValidateMove(board *Board, player Player, move Move) error {
+func ValidateMove(board *Board, side Side, move Move) error {
 	if board == nil {
 		return fmt.Errorf("board is nil")
 	}
-	if player == PlayerNone {
-		return fmt.Errorf("player is required")
+	if side == SideNone {
+		return fmt.Errorf("side is required")
 	}
 	if !board.HasPoint(move.Source) {
 		return fmt.Errorf("source point %d does not exist", move.Source)
@@ -23,8 +23,8 @@ func ValidateMove(board *Board, player Player, move Move) error {
 	if !ok {
 		return fmt.Errorf("source point %d is empty", move.Source)
 	}
-	if piece.Owner != player {
-		return fmt.Errorf("piece at source point %d belongs to %s, not %s", move.Source, piece.Owner, player)
+	if piece.Owner != side {
+		return fmt.Errorf("piece at source point %d belongs to %s, not %s", move.Source, piece.Owner, side)
 	}
 	if !board.IsEmpty(move.Target) {
 		return fmt.Errorf("target point %d is occupied", move.Target)
@@ -33,8 +33,8 @@ func ValidateMove(board *Board, player Player, move Move) error {
 	return nil
 }
 
-func ApplyMove(board *Board, player Player, move Move) error {
-	if err := ValidateMove(board, player, move); err != nil {
+func ApplyMove(board *Board, side Side, move Move) error {
+	if err := ValidateMove(board, side, move); err != nil {
 		return err
 	}
 	return board.MovePiece(move)

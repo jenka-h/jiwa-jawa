@@ -5,6 +5,7 @@ import (
 	"time"
 
 	err "jiwa-jawa/internal/error"
+	"jiwa-jawa/internal/player"
 )
 
 // State describes the lifecycle of a Dam Daman network session.
@@ -19,35 +20,34 @@ const (
 	StateClosed
 )
 
-// Player describes one participant in a Dam Daman session.
-type Player struct {
-	ID      string
-	Name    string
+// Participant describes one network participant in a Dam Daman session.
+type Participant struct {
+	Player  player.Player
 	Address string
 }
 
 // Session stores local and peer metadata for one game session.
 type Session struct {
 	ID        uint64
-	Local     Player
-	Peer      Player
+	Local     Participant
+	Peer      Participant
 	State     State
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
 
 // New creates a new session descriptor.
-func New(id uint64, local Player) *Session {
+func New(id uint64, local Participant) *Session {
 	return nil
 }
 
 // Join starts session negotiation with a peer.
-func (s *Session) Join(ctx context.Context, peer Player) error {
+func (s *Session) Join(ctx context.Context, peer Participant) error {
 	return err.ErrNotImplemented
 }
 
 // Accept accepts a peer join request.
-func (s *Session) Accept(peer Player) error {
+func (s *Session) Accept(peer Participant) error {
 	return err.ErrNotImplemented
 }
 

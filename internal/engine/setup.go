@@ -17,8 +17,8 @@ func NewEmptyBoard() (*Board, error) {
 	}
 
 	for _, edge := range defaultEdges {
-		from := MustPointIDByPosition(edge.from.x, edge.from.y)
-		to := MustPointIDByPosition(edge.to.x, edge.to.y)
+		from := MustPointIDByPosition(edge.From.X, edge.From.Y)
+		to := MustPointIDByPosition(edge.To.X, edge.To.Y)
 
 		if err := board.Connect(from, to); err != nil {
 			return nil, err
@@ -35,12 +35,9 @@ func NewDefaultBoard() (*Board, error) {
 	}
 
 	for _, placement := range defaultPlacements {
-		id := MustPointIDByPosition(placement.x, placement.y)
+		id := MustPointIDByPosition(placement.X, placement.Y)
 
-		if err := board.PlacePiece(
-			id,
-			Piece{Owner: placement.owner},
-		); err != nil {
+		if err := board.PlacePiece(id, Piece{Owner: placement.Owner}); err != nil {
 			return nil, err
 		}
 	}
@@ -49,7 +46,7 @@ func NewDefaultBoard() (*Board, error) {
 }
 
 func PointIDByPosition(x, y int) (PointID, error) {
-	id, ok := pointByPosition[coordinate{x, y}]
+	id, ok := pointByPosition[Coordinate{x, y}]
 	if !ok {
 		return 0, fmt.Errorf(
 			"no default board point at (%d, %d)",
@@ -71,7 +68,7 @@ func MustPointIDByPosition(x, y int) PointID {
 }
 
 func BuildDefaultPoints() []Position {
-	coords := []coordinate{
+	coords := []Coordinate{
 		{2, -2},
 		{1, -1},
 		{2, -1},
@@ -80,39 +77,39 @@ func BuildDefaultPoints() []Position {
 
 	for y := 0; y < 5; y++ {
 		for x := 0; x < 5; x++ {
-			coords = append(coords, coordinate{x, y})
+			coords = append(coords, Coordinate{x, y})
 		}
 	}
 
 	coords = append(
 		coords,
-		coordinate{1, 5},
-		coordinate{2, 5},
-		coordinate{3, 5},
-		coordinate{2, 6},
+		Coordinate{1, 5},
+		Coordinate{2, 5},
+		Coordinate{3, 5},
+		Coordinate{2, 6},
 	)
 
 	points := make([]Position, len(coords))
 	for i, coord := range coords {
 		points[i] = Position{
 			ID: PointID(i + 1),
-			X:  coord.x,
-			Y:  coord.y,
+			X:  coord.X,
+			Y:  coord.Y,
 		}
 	}
 
 	return points
 }
 
-func BuildDefaultEdges() []edgeSpec {
-	points := make(map[coordinate]struct{}, len(defaultPoints))
+func BuildDefaultEdges() []EdgeSpec {
+	points := make(map[Coordinate]struct{}, len(defaultPoints))
 	for _, point := range defaultPoints {
-		points[coordinate{point.X, point.Y}] = struct{}{}
+		points[Coordinate{point.X, point.Y}] = struct{}{}
 	}
 
-	edges := make(map[edgeSpec]struct{})
+	edges := make(map[EdgeSpec]struct{})
 
-	add := func(a, b coordinate) {
+	add := func(a, b Coordinate) {
 		if _, ok := points[a]; !ok {
 			return
 		}
@@ -125,12 +122,12 @@ func BuildDefaultEdges() []edgeSpec {
 			a, b = b, a
 		}
 
-		edges[edgeSpec{a, b}] = struct{}{}
+		edges[EdgeSpec{a, b}] = struct{}{}
 	}
 
 	for point := range points {
-		add(point, coordinate{point.x + 1, point.y})
-		add(point, coordinate{point.x, point.y + 1})
+		add(point, Coordinate{point.X + 1, point.Y})
+		add(point, Coordinate{point.X, point.Y + 1})
 	}
 
 	for y := 0; y < 4; y++ {
@@ -140,37 +137,37 @@ func BuildDefaultEdges() []edgeSpec {
 			}
 
 			add(
-				coordinate{x, y},
-				coordinate{x + 1, y + 1},
+				Coordinate{x, y},
+				Coordinate{x + 1, y + 1},
 			)
 
 			add(
-				coordinate{x + 1, y},
-				coordinate{x, y + 1},
+				Coordinate{x + 1, y},
+				Coordinate{x, y + 1},
 			)
 		}
 	}
 
 	addTip := func(tipY, middleY, baseY int) {
-		add(coordinate{2, tipY}, coordinate{1, middleY})
-		add(coordinate{2, tipY}, coordinate{2, middleY})
-		add(coordinate{2, tipY}, coordinate{3, middleY})
+		add(Coordinate{2, tipY}, Coordinate{1, middleY})
+		add(Coordinate{2, tipY}, Coordinate{2, middleY})
+		add(Coordinate{2, tipY}, Coordinate{3, middleY})
 
-		add(coordinate{1, middleY}, coordinate{1, baseY})
-		add(coordinate{1, middleY}, coordinate{2, baseY})
+		add(Coordinate{1, middleY}, Coordinate{1, baseY})
+		add(Coordinate{1, middleY}, Coordinate{2, baseY})
 
-		add(coordinate{2, middleY}, coordinate{1, baseY})
-		add(coordinate{2, middleY}, coordinate{2, baseY})
-		add(coordinate{2, middleY}, coordinate{3, baseY})
+		add(Coordinate{2, middleY}, Coordinate{1, baseY})
+		add(Coordinate{2, middleY}, Coordinate{2, baseY})
+		add(Coordinate{2, middleY}, Coordinate{3, baseY})
 
-		add(coordinate{3, middleY}, coordinate{2, baseY})
-		add(coordinate{3, middleY}, coordinate{3, baseY})
+		add(Coordinate{3, middleY}, Coordinate{2, baseY})
+		add(Coordinate{3, middleY}, Coordinate{3, baseY})
 	}
 
 	addTip(-2, -1, 0)
 	addTip(6, 5, 4)
 
-	result := make([]edgeSpec, 0, len(edges))
+	result := make([]EdgeSpec, 0, len(edges))
 	for edge := range edges {
 		result = append(result, edge)
 	}
@@ -178,64 +175,64 @@ func BuildDefaultEdges() []edgeSpec {
 	return result
 }
 
-func BuildDefaultPlacements() []placementSpec {
-	var placements []placementSpec
+func BuildDefaultPlacements() []PlacementSpec {
+	var placements []PlacementSpec
 
-	add := func(owner Player, coords ...coordinate) {
+	add := func(owner Side, coords ...Coordinate) {
 		for _, coord := range coords {
 			placements = append(
 				placements,
-				placementSpec{
-					coordinate: coord,
-					owner:      owner,
+				PlacementSpec{
+					Coordinate: coord,
+					Owner:      owner,
 				},
 			)
 		}
 	}
 
-	addRows := func(owner Player, rows ...int) {
+	addRows := func(owner Side, rows ...int) {
 		for _, y := range rows {
 			for x := 0; x < 5; x++ {
-				add(owner, coordinate{x, y})
+				add(owner, Coordinate{x, y})
 			}
 		}
 	}
 
-	addRows(PlayerOne, 3, 4)
+	addRows(SideOne, 3, 4)
 	add(
-		PlayerOne,
-		coordinate{1, 5},
-		coordinate{2, 5},
-		coordinate{3, 5},
-		coordinate{2, 6},
-		coordinate{3, 2},
-		coordinate{4, 2},
+		SideOne,
+		Coordinate{1, 5},
+		Coordinate{2, 5},
+		Coordinate{3, 5},
+		Coordinate{2, 6},
+		Coordinate{3, 2},
+		Coordinate{4, 2},
 	)
 
-	addRows(PlayerTwo, 0, 1)
+	addRows(SideTwo, 0, 1)
 	add(
-		PlayerTwo,
-		coordinate{1, -1},
-		coordinate{2, -1},
-		coordinate{3, -1},
-		coordinate{2, -2},
-		coordinate{0, 2},
-		coordinate{1, 2},
+		SideTwo,
+		Coordinate{1, -1},
+		Coordinate{2, -1},
+		Coordinate{3, -1},
+		Coordinate{2, -2},
+		Coordinate{0, 2},
+		Coordinate{1, 2},
 	)
 
 	return placements
 }
 
-func IndexPoints(points []Position) map[coordinate]PointID {
-	index := make(map[coordinate]PointID, len(points))
+func IndexPoints(points []Position) map[Coordinate]PointID {
+	index := make(map[Coordinate]PointID, len(points))
 
 	for _, point := range points {
-		index[coordinate{point.X, point.Y}] = point.ID
+		index[Coordinate{point.X, point.Y}] = point.ID
 	}
 
 	return index
 }
 
-func LessCoordinate(a, b coordinate) bool {
-	return a.y < b.y || a.y == b.y && a.x < b.x
+func LessCoordinate(a, b Coordinate) bool {
+	return a.Y < b.Y || a.Y == b.Y && a.X < b.X
 }

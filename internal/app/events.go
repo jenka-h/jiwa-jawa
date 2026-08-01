@@ -4,9 +4,9 @@ import (
 	"time"
 
 	"jiwa-jawa/internal/engine"
+	"jiwa-jawa/internal/player"
 )
 
-// EventType identifies application events that can be rendered or logged.
 type EventType string
 
 const (
@@ -20,16 +20,14 @@ const (
 	EventError        EventType = "error"
 )
 
-// Event is a high-level Dam Daman application event.
 type Event struct {
 	Type      EventType
-	PlayerID  string
+	PlayerID  player.ID
 	Move      *engine.Move
 	Message   string
 	Timestamp time.Time
 }
 
-// EventHandler handles application events.
 type EventHandler interface {
 	HandleEvent(event Event) error
 }

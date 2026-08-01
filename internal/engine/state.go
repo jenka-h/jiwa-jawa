@@ -2,7 +2,7 @@ package engine
 
 import "fmt"
 
-func NewGameState(board *Board, firstTurn Player) *GameState {
+func NewGameState(board *Board, firstTurn Side) *GameState {
 	return &GameState{Board: board, CurrentTurn: firstTurn, Phase: PhaseMove}
 }
 
@@ -21,11 +21,11 @@ func (s *GameState) ApplyMove(move Move) error {
 	}
 
 	s.MoveNumber++
-	s.CurrentTurn = NextPlayer(s.CurrentTurn)
+	s.CurrentTurn = NextSide(s.CurrentTurn)
 	return nil
 }
 
-func (s *GameState) Finish(winner Player) {
+func (s *GameState) Finish(winner Side) {
 	if s == nil {
 		return
 	}
@@ -34,13 +34,13 @@ func (s *GameState) Finish(winner Player) {
 	s.Phase = PhaseFinish
 }
 
-func NextPlayer(player Player) Player {
-	switch player {
-	case PlayerOne:
-		return PlayerTwo
-	case PlayerTwo:
-		return PlayerOne
+func NextSide(side Side) Side {
+	switch side {
+	case SideOne:
+		return SideTwo
+	case SideTwo:
+		return SideOne
 	default:
-		return PlayerNone
+		return SideNone
 	}
 }
