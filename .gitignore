@@ -1,0 +1,20 @@
+# Runtime game logs
+logs/
+*.jsonl
+
+# Local profile and Raft state
+data/profiles.json
+data/raft/
+
+# Locally built executables
+/client
+/logger-service
+
+# Go test/build artifacts
+*.test
+*.out
+coverage.out
+
+# Editor and operating-system files
+.DS_Store
+Thumbs.db
