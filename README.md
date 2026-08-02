@@ -54,13 +54,23 @@ For one-machine testing, open two terminals.
 Player A:
 
 ```bash
-go run ./cmd/client --ui gui --addr :8080 --listen :9001
+go run ./cmd/client \
+  --ui gui \
+  --addr :8080 \
+  --listen :9001 \
+  --profiles data/host-profiles.json \
+  --log logs/host.jsonl
 ```
 
 Player B:
 
 ```bash
-go run ./cmd/client --ui gui --addr :8081 --listen :9002
+go run ./cmd/client \
+  --ui gui \
+  --addr :8081 \
+  --listen :9002 \
+  --profiles data/join-profiles.json \
+  --log logs/join.jsonl
 ```
 
 Open `http://localhost:8080` and choose **Host game**. Open `http://localhost:8081`, enter
@@ -111,7 +121,7 @@ Available actions include:
 
 - Select or change the active piece
 - Move to a valid destination
-- Continue a chained capture with the same piece, or choose **End turn** to stop voluntarily
+- Continue a chained capture with any highlighted eligible piece, or choose **End turn** to stop voluntarily
 - Apply Dam Ora Mangan when a player skips an available capture: the opponent removes any three offending pieces
 - View the gameplay history
 - Surrender the match
@@ -121,6 +131,9 @@ In terminal mode, the available commands are:
 
 ```text
 move <source> <target>
+m <source> <target>
+end
+penalty <point>
 board
 help
 surrender
@@ -144,13 +157,13 @@ automatically when it exits.
 
 ## Raft Logger
 
-The Raft logger runs separately from the game processes. Start a local three-node cluster with:
+The Raft logger runs separately from the game processes. In the first terminal, start a local three-node cluster with:
 
 ```bash
 ./scripts/start-raft-local.sh
 ```
 
-Run a game client and send its gameplay events to the Raft leader:
+In another terminal, run a game client and send its gameplay events to the Raft leader:
 
 ```bash
 go run ./cmd/client --ui gui --log-server http://127.0.0.1:9101
