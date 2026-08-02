@@ -1,31 +1,25 @@
 package protocol
 
-import (
-	"encoding/json"
-	"fmt"
-	"time"
-)
+import "fmt"
 
 type MessageType uint8
 
 const (
-	MessageJoin   MessageType = iota + 1 // sebagai SYN
-	MessageAccept                        // sebagai SYN-ACK
-	MessageMove                          // for every move
-
+	MessageJoin MessageType = iota + 1
+	MessageAccept
+	MessageMove
 	MessageACK
-
 	MessageFinish
 	MessageLeave
-
-	// state recovery + disconnect
 	MessageHeartbeat
 	MessageStateRequest
 	MessageStateSnapshot
+	MessagePenalty
+	MessageEndTurn
 )
 
 func (t MessageType) IsValid() bool {
-	return t >= MessageJoin && t <= MessageStateSnapshot
+	return t >= MessageJoin && t <= MessageEndTurn
 }
 
 func (t MessageType) String() string {
@@ -48,39 +42,11 @@ func (t MessageType) String() string {
 		return "STATE_REQUEST"
 	case MessageStateSnapshot:
 		return "STATE_SNAPSHOT"
+	case MessagePenalty:
+		return "PENALTY"
+	case MessageEndTurn:
+		return "END_TURN"
 	default:
 		return fmt.Sprintf("UNKNOWN(%d)", t)
-	}
-}
-
-type Envelope struct {
-	MessageID   string          `json:"message_id"`
-	SessionID   string          `json:"session_id"`
-	SenderID    string          `json:"sender_id"`
-	Sequence    uint64          `json:"sequence"`
-	MessageType MessageType     `json:"message_type"`
-	AckFor      string          `json:"ack_for,omitempty"`
-	Timestamp   int64           `json:"timestamp"`
-	Payload     json.RawMessage `json:"payload,omitempty"`
-}
-
-func NewEnvelope(
-	messageID string,
-	sessionID string,
-	senderID string,
-	sequence uint64,
-	messageType MessageType,
-	payload json.RawMessage,
-	ackFor string,
-) Envelope {
-	return Envelope{
-		MessageID:   messageID,
-		SessionID:   sessionID,
-		SenderID:    senderID,
-		Sequence:    sequence,
-		MessageType: messageType,
-		AckFor:      ackFor,
-		Timestamp:   time.Now().UnixMilli(),
-		Payload:     payload,
 	}
 }

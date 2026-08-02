@@ -53,12 +53,25 @@ type Event struct {
 }
 
 type GameState struct {
-	Board       *Board
-	CurrentTurn Side
-	Phase       Phase
-	MoveNumber  int
-	Finished    bool
-	Winner      Side
+	Board               *Board
+	CurrentTurn         Side
+	Phase               Phase
+	MoveNumber          int
+	Finished            bool
+	Winner              Side
+	PenaltySide         Side
+	PenaltiesRemaining  int
+	CaptureContinuation bool
+}
+
+type MoveResult struct {
+	Move         Move
+	Captured     []PointID
+	NextTurn     Side
+	GameOver     bool
+	Winner       Side
+	MustContinue bool
+	DamOraMangan bool
 }
 
 type Coordinate struct{ X, Y int }

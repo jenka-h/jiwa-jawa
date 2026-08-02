@@ -10,13 +10,11 @@ import (
 	"jiwa-jawa/internal/transport/protocol"
 )
 
-// ReceivedPacket is a packet accepted from the network with sender metadata.
 type ReceivedPacket struct {
 	Packet protocol.Packet
 	Addr   *net.UDPAddr
 }
 
-// Connection represents one UDP-based reliable transport endpoint.
 type Connection struct {
 	conn *net.UDPConn
 	peer *net.UDPAddr
@@ -39,7 +37,6 @@ type Connection struct {
 	closeOnce sync.Once
 }
 
-// NewConnection creates a new RUDP connection bound to cfg.ListenAddr.
 func NewConnection(cfg Config) (*Connection, error) {
 	listenAddr, err := net.ResolveUDPAddr("udp", cfg.ListenAddr)
 	if err != nil {
@@ -90,13 +87,11 @@ func NewConnection(cfg Config) (*Connection, error) {
 	return conn, nil
 }
 
-// Start starts the receive loop.
 func (c *Connection) Start(ctx context.Context) error {
 	go c.receiveLoop(ctx)
 	return nil
 }
 
-// Close stops the connection, unblocks pending ACK waits, and closes the UDP socket.
 func (c *Connection) Close() error {
 	var closeErr error
 
@@ -115,24 +110,26 @@ func (c *Connection) Close() error {
 	return closeErr
 }
 
-// Done returns a channel that is closed when the connection shuts down.
 func (c *Connection) Done() <-chan struct{} {
 	return c.done
 }
 
-// LocalAddr returns the local UDP address.
 func (c *Connection) LocalAddr() net.Addr {
 	return c.conn.LocalAddr()
 }
 
-// PeerAddr returns the configured peer UDP address.
 func (c *Connection) PeerAddr() *net.UDPAddr {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.peer
 }
 
-// SetPeer sets the remote peer address.
+func (c *Connection) SetSessionID(sessionID uint64) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.sessionID = sessionID
+}
+
 func (c *Connection) SetPeer(addr string) error {
 	peer, err := net.ResolveUDPAddr("udp", addr)
 	if err != nil {
@@ -146,7 +143,6 @@ func (c *Connection) SetPeer(addr string) error {
 	return nil
 }
 
-// SendPacket sends one packet to the configured peer without retry handling.
 func (c *Connection) SendPacket(packet protocol.Packet) error {
 	c.mu.Lock()
 	peer := c.peer
@@ -159,7 +155,6 @@ func (c *Connection) SendPacket(packet protocol.Packet) error {
 	return c.sendPacketTo(packet, peer)
 }
 
-// SendReliable sends one reliable packet and waits for its ACK with retries.
 func (c *Connection) SendReliable(packet protocol.Packet) error {
 	c.mu.Lock()
 	peer := c.peer
@@ -196,7 +191,6 @@ func (c *Connection) SendReliable(packet protocol.Packet) error {
 	return err.ErrMaxRetries
 }
 
-// ReceivePacketContext receives and decodes one non-ACK packet with cancellation support.
 func (c *Connection) ReceivePacketContext(ctx context.Context) (protocol.Packet, *net.UDPAddr, error) {
 	buffer := make([]byte, c.bufferSize)
 
@@ -239,12 +233,10 @@ func (c *Connection) ReceivePacketContext(ctx context.Context) (protocol.Packet,
 	}
 }
 
-// Incoming returns packets accepted by the background receive loop.
 func (c *Connection) Incoming() <-chan ReceivedPacket {
 	return c.incoming
 }
 
-// Errors returns asynchronous connection errors.
 func (c *Connection) Errors() <-chan error {
 	return c.errors
 }
