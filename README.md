@@ -1,5 +1,4 @@
 # HoloDam: Javanese Strategy Chess Game
-# HoloDam over Reliable UDP
 
 Two independent Go processes play HoloDam through UDP sockets. One player acts as the
 authoritative host, while another player joins as a client. The game can be controlled through a
