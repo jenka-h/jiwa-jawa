@@ -178,3 +178,10 @@ curl http://127.0.0.1:9101/events
 
 A three-node cluster can continue committing events when one logger node fails. If the cluster
 loses its majority, new writes are rejected to prevent conflicting gameplay histories.
+
+Reference: 
+- Separate Logging: https://medium.com/data-science/raft-algorithm-explained-2-30db4790cdef
+- System Design: https://youtu.be/vad1B7CZrSw?si=fE3L75-f0UqVLqkR 
+- Chess Analysis: https://medium.com/@anuragkumbhare2043/system-design-building-a-scalable-online-chess-game-%EF%B8%8F-7369dcfa7edf 
+- Socket Programming: https://medium.com/@gaurav290802/socket-programming-101-cdfd343f3028
+- Chess Programming: https://www.chessprogramming.org/Protocols
